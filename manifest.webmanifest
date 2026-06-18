@@ -1,0 +1,15 @@
+{
+  "name": "Voinko syödä? – Raskausajan ruoka-apuri",
+  "short_name": "Voinko syödä?",
+  "description": "Tarkista nopeasti, voiko ruokaa syödä raskausaikana. Perustuu Ruokaviraston ohjeisiin.",
+  "lang": "fi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EAF0EC",
+  "theme_color": "#173A2A",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
