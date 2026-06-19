@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voinko syödä? – Raskausajan ruoka-apuri</title>
+<meta name="description" content="Tarkista nopeasti, voiko ruokaa syödä raskausaikana. Perustuu Ruokaviraston ohjeisiin.">
+<meta name="theme-color" content="#173A2A">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Voinko syödä?">
+<style>
+  :root{
+    --bg:#EAF0EC; --surface:#FFFFFF; --ink:#173A2A; --ink-soft:#51695C;
+    --line:#D7E2DA; --line-soft:#E7EEE9;
+    --green:#2E7D5B; --green-bg:#E2F0E8; --green-ink:#1B5E40;
+    --amber:#B26B12; --amber-bg:#FAEED6; --amber-ink:#86500D;
+    --red:#B23A35; --red-bg:#F8E3E1; --red-ink:#892B27;
+    --r:20px;
+    --shadow:0 1px 2px rgba(23,58,42,.05), 0 8px 24px rgba(23,58,42,.07);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+    min-height:100svh;
+    padding:max(20px,env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:540px;margin:0 auto}
+
+  header{padding:6px 2px 22px}
+  .eyebrow{
+    font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--green);margin:0 0 10px;display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+  h1{
+    font-size:clamp(2rem,8vw,2.7rem);line-height:1.02;margin:0;font-weight:800;
+    letter-spacing:-.02em;
+  }
+  .lede{margin:12px 0 0;color:var(--ink-soft);font-size:1rem;max-width:34ch}
+
+  .search{position:sticky;top:8px;z-index:5;margin:22px 0 6px}
+  .field{
+    display:flex;align-items:center;gap:12px;background:var(--surface);
+    border:1.5px solid var(--line);border-radius:16px;padding:0 16px;height:60px;
+    box-shadow:var(--shadow);transition:border-color .15s, box-shadow .15s;
+  }
+  .field:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(46,125,91,.12)}
+  .field svg{flex:0 0 auto;color:var(--ink-soft)}
+  #q{
+    border:0;outline:0;background:transparent;width:100%;height:100%;
+    font:inherit;font-size:1.12rem;color:var(--ink);
+  }
+  #q::placeholder{color:#9DB2A7}
+  #q::-webkit-search-cancel-button,#q::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
+  .clear{
+    border:0;background:var(--line-soft);color:var(--ink-soft);cursor:pointer;
+    width:30px;height:30px;border-radius:50%;font-size:1.1rem;line-height:1;
+    display:none;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .clear:hover{background:var(--line)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:16px 2px 0}
+  .chips .lbl{width:100%;font-size:.8rem;color:var(--ink-soft);margin-bottom:2px}
+  .chip{
+    border:1px solid var(--line);background:var(--surface);color:var(--ink);
+    border-radius:999px;padding:8px 14px;font:inherit;font-size:.9rem;cursor:pointer;
+    transition:background .12s,border-color .12s;
+  }
+  .chip:hover{background:var(--line-soft);border-color:var(--green)}
+
+  #results{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+  .count{font-size:.82rem;color:var(--ink-soft);margin:4px 2px 0}
+  .card{
+    background:var(--surface);border-radius:var(--r);overflow:hidden;
+    box-shadow:var(--shadow);border:1px solid var(--line-soft);
+    animation:rise .28s ease both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .card .top{display:flex;gap:14px;padding:18px 18px 14px;align-items:flex-start}
+  .badge{
+    flex:0 0 auto;width:46px;height:46px;border-radius:13px;display:flex;
+    align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;
+  }
+  .name{font-size:1.18rem;font-weight:700;letter-spacing:-.01em;margin:1px 0 4px}
+  .verdict{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+  .body{padding:0 18px 18px}
+  .detail{position:relative}
+  .detail.clamp{max-height:150px;overflow:hidden}
+  .detail.clamp::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:52px;
+    background:linear-gradient(transparent, var(--surface));pointer-events:none;
+  }
+  .ohje{font-size:1.02rem;margin:2px 0 0;white-space:pre-line}
+  .why{
+    margin:14px 0 0;padding-top:13px;border-top:1px solid var(--line-soft);
+    font-size:.92rem;color:var(--ink-soft);white-space:pre-line;
+  }
+  .why b{color:var(--ink);font-weight:600}
+  .src{display:inline-flex;align-items:center;gap:5px;font-size:.85rem;
+    color:var(--green);font-weight:600;text-decoration:none;white-space:nowrap}
+  .src:hover{text-decoration:underline}
+  .more{
+    margin:12px 0 0;border:0;background:transparent;color:var(--green);
+    font:inherit;font-weight:700;font-size:.9rem;cursor:pointer;padding:4px 0;
+  }
+  .more:hover{text-decoration:underline}
+
+  .v-valta .badge{background:var(--red-bg);color:var(--red)}
+  .v-valta .verdict{color:var(--red-ink)}
+  .v-valta{border-left:5px solid var(--red)}
+  .v-ehto .badge{background:var(--amber-bg);color:var(--amber)}
+  .v-ehto .verdict{color:var(--amber-ink)}
+  .v-ehto{border-left:5px solid var(--amber)}
+  .v-saa .badge{background:var(--green-bg);color:var(--green)}
+  .v-saa .verdict{color:var(--green-ink)}
+  .v-saa{border-left:5px solid var(--green)}
+
+  .empty{color:var(--ink-soft);font-size:.95rem;padding:8px 2px;margin:0}
+
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line)}
+  .note{font-size:.8rem;color:var(--ink-soft);margin:0 0 8px}
+  .note b{color:var(--ink)}
+  .install{
+    display:none;margin-top:6px;border:1.5px solid var(--green);background:transparent;
+    color:var(--green);border-radius:12px;padding:11px 16px;font:inherit;font-weight:600;
+    cursor:pointer;width:100%;
+  }
+  .ios-hint{display:none;font-size:.8rem;color:var(--ink-soft);margin-top:8px}
+
+  @media (prefers-reduced-motion: reduce){.card{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow"><span class="dot"></span> Raskausajan ruoka-apuri</p>
+    <h1>Voinko syödä?</h1>
+    <p class="lede">Kirjoita ruoka tai juoma, niin näet voiko sitä syödä raskausaikana.</p>
+  </header>
+
+  <div class="search">
+    <div class="field">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input id="q" type="search" inputmode="search" autocomplete="off" autocapitalize="off"
+             autofocus placeholder="esim. sushi, kahvi, brie, lakritsi" aria-label="Hae ruokaa">
+      <button class="clear" id="clear" aria-label="Tyhjennä">&times;</button>
+    </div>
+    <div class="chips" id="chips">
+      <span class="lbl">Kokeile:</span>
+    </div>
+  </div>
+
+  <div id="results" aria-live="polite"></div>
+
+  <footer>
+    <p class="note"><b>Hyvä tietää.</b> Tämä apuri perustuu Ruokaviraston ohjeeseen
+      <i>Elintarvikkeiden turvallisen käytön ohjeet</i> (päivitetty maaliskuu 2025) ja näyttää vain
+      raskausaikaa koskevat rajoitukset. Jos ruokaa ei löydy, sille ei ole tiedossa erityistä
+      raskausajan rajoitusta — se ei silti ole lääketieteellinen vahvistus.</p>
+    <p class="note">Apuri ei korvaa neuvolan tai lääkärin neuvoa. Epäselvissä tilanteissa tarkista
+      asia neuvolasta tai ruokavirasto.fi:stä.</p>
+    <button class="install" id="install">Asenna kotinäyttöön</button>
+    <p class="ios-hint" id="iosHint">Asenna: paina jakopainiketta ja valitse <b>Lisää Koti-valikkoon</b>.</p>
+  </footer>
+</div>
+
+<script>
+// Tekstit "Käyttöohje" (Oikea käyttö) ja "Miksi" (Ohjeen peruste) ovat sanatarkasti
+// Ruokaviraston ohjeesta "Elintarvikkeiden turvallisen käytön ohjeet" (maaliskuu 2025).
+const DATA = [
+  {nimi:"Alkoholia sisältävät juomat (oluet, siiderit, viinit ja väkevät alkoholijuomat)", tila:"valta",
+   ohje:"Ei käytetä",
+   peruste:"Alkoholi kulkeutuu istukan läpi alkioon ja sikiöön ja vaarantaa lapsen normaalin kasvun ja kehityksen. Satunnainenkin humalajuominen lisää haittariskiä. Sikiölle riskin aiheuttavaa alkoholialtistuksen määrää ei tunneta. Alkoholin käyttö on suositeltavaa lopettaa jo raskautta suunniteltaessa.",
+   lahde:""},
+  {nimi:"Maksaruuat (jauhemaksa- ja maksapihvi, maksakastike, maksalaatikko) sekä maksamakkara ja -pasteija", tila:"ehto",
+   ohje:"Maksaruokia (jauhemaksa- ja maksapihvi, maksakastike, maksalaatikko) vältetään koko raskauden ajan. Maksamakkaraa ja -pasteijaa voi syödä enintään 200 g viikossa ja enintään 100 g yhdellä aterialla. Jos maksamakkaran tai -pasteijan käyttö on päivittäistä, sitä tulisi käyttää enintään 30 g (= 2 rkl = 2 viipaletta) vuorokaudessa.",
+   peruste:"Raskauden aikana liiallinen A-vitamiinin saanti voi johtaa epämuodostuma- ja keskenmenoriskiin. Aikuisten A-vitamiinin (retinolin) turvallisen saannin yläraja on 3000 µg/vrk. Sitä suurempi päiväsaanti ravintolisistä raskauden aikana on lisännyt sikiövaurioiden riskiä.",
+   lahde:"https://www.ruokavirasto.fi/maksajaraskaus"},
+  {nimi:"Energiajuomat", tila:"valta",
+   ohje:"Energiajuomia ei suositella raskaana oleville, imettäville, alle 15-vuotiaille lapsille tai nuorille eikä kofeiiniherkille.\nKun tuotteessa on yli 150 mg/l kofeiinia, siinä on oltava pakkausmerkintä kofeiinipitoisuudesta (mg/100 ml) sekä varoitus: ”Korkea kofeiinipitoisuus. Ei suositella lapsille eikä raskaana oleville tai imettäville.” Lisäksi pakkaukseen tulee merkitä juoman kofeiinipitoisuus (mg/100 ml) sekä suurin vuorokautinen käyttömäärä. Energiajuomien kofeiinipitoisuus vaihtelee eri tuotteiden välillä, joten tarkasta aina juoman kofeiinipitoisuus ja suurin vuorokautinen käyttömäärä pakkauksesta.",
+   peruste:"",
+   lahde:"https://www.ruokavirasto.fi/energiajuomat"},
+  {nimi:"Yrttijuomat/-haudukkeet (muut kuin teekasvista haudutetut juomat)", tila:"valta",
+   ohje:"Ei käytetä",
+   peruste:"Turvallisuudesta ei ole tietoa, voivat sisältää luontaisia haitta-aineita.",
+   lahde:""},
+  {nimi:"Korvasieni", tila:"valta",
+   ohje:"Ei käytetä",
+   peruste:"Käsittelystä huolimatta sienissä on todettu jäämiä korvasienimyrkystä (gyromitriini). Ks. korvasienten käsittelyohje.",
+   lahde:"https://www.ruokavirasto.fi/myrkyllisetsienet"},
+  {nimi:"Vihreä, itänyt tai vaurioitunut peruna", tila:"valta",
+   ohje:"Ei käytetä",
+   peruste:"Korkea solaniinipitoisuus (luontainen toksiini).",
+   lahde:"https://www.ruokavirasto.fi/glykoalkaloidit"},
+  {nimi:"Kypsymätön tomaatti", tila:"valta",
+   ohje:"Ei käytetä",
+   peruste:"Korkea tomatiinipitoisuus (luontainen toksiini).",
+   lahde:""},
+  {nimi:"Ravintolisät, kasviperäiset", tila:"valta",
+   ohje:"Käyttöä ei suositella.",
+   peruste:"Turvallisesta käytöstä ei ole tietoa. Voivat sisältää luontaisia haitta-aineita.",
+   lahde:""},
+
+  {nimi:"Kala", tila:"ehto",
+   ohje:"Kalaa suositellaan syötäväksi 2–3 kertaa viikossa. Kalan aiheuttamat terveyshyödyt ovat suuremmat kuin mahdolliset haitat. Kalalajien vaihteleva käyttö varmistaa, ettei mahdollisista ympäristösaastepitoisuuksista tarvitse olla huolissaan.\nRuokavalioon suositellaan vaihdellen järvikalaa, kasvatettua kalaa ja merikalaa (esimerkiksi seiti, kirjolohi, nieriä, särki). Hyviä vaihtoehtoja ovat myös mm. kalapyörykät, -pihvit sekä kalasäilykkeet, kuten järvikalatuotteet. Sisävesialueiden kalaa päivittäin syövien on hyvä suosia muita lajeja kuin haukea, isokokoisia ahvenia, kuhaa ja madetta, jotka ovat elohopeaa kerääviä petokaloja.\nAlueellisesti voi olla tarpeen välttää petokalojen runsasta käyttöä tavallista korkeampien vierasainepitoisuuksien vuoksi.\nKäyttörajoitukset:\n− Rajoituksetta voi syödä kasvatettua kalaa ja sisävesiltä pyydettyä särkeä.\nItämeren kalat\n− 3–4 kertaa kuukaudessa: Kuha, lahna, siika, ahven, hauki tai muikku. Vaihtele kalalajeja.\n− Kerran kahdessa kuukaudessa: Luonnonlohi, taimen, nahkiainen tai iso, perkaamattomana yli 19 cm:n silakka\n− Pari kertaa vuodessa: Kuore\nSisävesien kalat\n− Enintään 2 kertaa viikossa: Kuha, lahna, siika, ahven, hauki tai muikku. Vaihtele kalalajeja.\n− 2 kertaa kuukaudessa: Kuore",
+   peruste:"Eräisiin kaloihin kertyvä elohopea, PFAS-yhdisteet ja/tai dioksiinit sekä PCB-yhdisteet.",
+   lahde:"https://www.ruokavirasto.fi/kalansyontisuositus"},
+  {nimi:"Raaka kala ja äyriäiset, graavisuolatut ja kylmäsavustetut kalatuotteet sekä pastöroimaton mäti ja niitä sisältävät ruoat kuten sushit", tila:"ehto",
+   ohje:"Seuraavia tuotteita käytetään vain kuumennettuina (sisälämpötila kauttaaltaan vähintään 70 astetta):\n− Raaka kala\n− Graavisuolattu tai kylmäsavustettu kala (sekä valmiiksi pakatut että pakkaamattomat ja/tai itse valmistetut tuotteet)\n− tyhjiöpakatut sillituotteet\n− Kypsentämättömät äyriäiset\n− Pastöroimaton mäti\n− Edellä mainittua tuotteita sisältävät ruoat, ml. sushi.\nKalasta valmistettuja puolisäilykkeitä (ns. purkkisillit) voidaan käyttää sellaisenaan.",
+   peruste:"Listeriariski. Raskaana olevilla listerioosi voi johtaa keskenmenoon tai ennenaikaiseen synnytykseen tai vastasyntyneen infektoitumiseen.\nVanhuksilla sekä henkilöillä, joiden vastustuskyky on heikentynyt perussairauden tai lääkityksen vuoksi, listerioosi voi ilmetä vaikeana yleisinfektiona tai aivokalvontulehduksena.",
+   lahde:"https://www.ruokavirasto.fi/listeria"},
+  {nimi:"Osterit", tila:"ehto",
+   ohje:"Kuumennetaan ennen syömistä kauttaaltaan vähintään 90 asteen lämpötilassa 2 minuutin ajan.",
+   peruste:"Norovirusriski.",
+   lahde:""},
+  {nimi:"Kypsät lihavalmisteet, leikkeleet", tila:"ehto",
+   ohje:"Kuumennetaan ennen syömistä tai syödään mielellään hyvissä ajoin ennen viimeistä käyttöpäivää.",
+   peruste:"Listeriariski. Raskaana olevilla listerioosi voi johtaa keskenmenoon tai ennenaikaiseen synnytykseen tai vastasyntyneen infektoitumiseen. Vanhuksilla sekä henkilöillä, joiden vastustuskyky on heikentynyt perussairauden tai lääkityksen vuoksi, listerioosi voi ilmetä vaikeana yleisinfektiona tai aivokalvontulehduksena.",
+   lahde:"https://www.ruokavirasto.fi/listeria"},
+  {nimi:"Raaka liha, siipikarjanliha, raaka jauheliha ja tartarpihvi", tila:"ehto",
+   ohje:"Liha kypsennetään asianmukaisesti. Sianliha, siipikarjanliha ja kaikki jauheliharuoat, kuten pihvit, pyörykät ja mureke, tarjotaan aina läpikypsänä. Samoja välineitä ei pidä käyttää raa'alle ja kypsälle tuotteelle.",
+   peruste:"Raa'assa lihassa voi esiintyä erilaisia taudinaiheuttajia.",
+   lahde:"https://www.ruokavirasto.fi/liha"},
+  {nimi:"Raaka kokoliha, kestomakkarat (salami, metvursti), ilmakuivattu kinkku, kylmäsavustettu liha ja kypsentämätön kuivaliha (poron kuivaliha)", tila:"ehto",
+   ohje:"Vältetään kaikkia sellaisia lihatuotteita, joita ei ole missään vaiheessa kuumennettu. Myös kokoliha (pihvit, paisti) kypsennetään läpikypsäksi. Vaihtoehtoisesti tuotteet pakastetaan ennen syömistä –18-asteen lämpötilaan vähintään 3 vuorokauden ajaksi ennen käyttöä toksoplasmaloisen tuhoamiseksi.",
+   peruste:"Erityisesti raskaana olevilla toksoplasma-riski. Toksoplasmoosi.",
+   lahde:""},
+  {nimi:"Raakamaito ja pastöroimaton maito", tila:"ehto",
+   ohje:"Käytetään vain kuumennettuna.\nHuom! Erityinen riskielintarvike lapsille, raskaana oleville, vanhuksille ja vastustuskyvyltään heikentyneille.",
+   peruste:"Yersinia-, listeria-, EHEC-, salmonella- ja kampylobakteeririski.",
+   lahde:"https://www.ruokavirasto.fi/raakamaito"},
+  {nimi:"Pastöroimattomasta maidosta valmistetut juustot ja muut tuotteet", tila:"ehto",
+   ohje:"Käytetään vain kuumennettuina.\nErittäin kovia juustoja, kuten Grana Padano ja Parmigiano Reggiano (parmesanijuusto), voidaan käyttää sellaisenaan.",
+   peruste:"Kuten raakamaidon kohdalla.",
+   lahde:""},
+  {nimi:"Pastöroidusta maidosta valmistetut home- ja kittijuustot (brie, gorgonzola, chèvre, vacherol, taleggio)", tila:"ehto",
+   ohje:"Home- ja kittijuustoja, kuten brie, gorgonzola, chèvre, vacherol ja taleggio, ei suositella kuumentamattomina, vaikka ne olisikin tehty pastöroidusta maidosta. Kuumentaminen kauttaaltaan vähintään 70 asteen lämpötilaan tuhoaa listerian.",
+   peruste:"Listeriariski. Raskaana olevilla listerioosi voi johtaa keskenmenoon tai ennenaikaiseen synnytykseen tai vastasyntyneen infektoitumiseen. Vanhuksilla sekä henkilöillä, joiden vastustuskyky on heikentynyt perussairauden tai lääkityksen vuoksi, listerioosi voi ilmetä vaikeana yleisinfektiona tai aivokalvontulehduksena.",
+   lahde:"https://www.ruokavirasto.fi/listeria"},
+  {nimi:"Pastöroidusta maidosta valmistetut muut pehmeät juustot (esim. raejuusto, tuorejuusto, sulatejuusto, feta)", tila:"ehto",
+   ohje:"Raejuustoa sekä kuumana rasioihin pakattuja tuore- ja sulatejuustoja voidaan käyttää sellaisenaan. Pastöroidusta maidosta valmistettuja pehmeitä juustoja (pois lukien home- ja kittijuustot) voidaan niin ikään käyttää myös kuumentamattomina, mutta ne on hyvä käyttää tuoreina, hyvissä ajoin ennen viimeistä käyttöpäivää.",
+   peruste:"",
+   lahde:""},
+  {nimi:"Pakastevihannekset ja kylmässä säilytettävät valmisruuat (laatikkoruoat, keitot, pizzat, pyörykät, piirakat, kasviproteiinivalmisteet, lämminsavukala, pilkotut kasvikset)", tila:"ehto",
+   ohje:"Kaikki pakastevihannekset kuumennetaan ennen käyttöä (salaattiin lisättävät kiehautetaan ja jäähdytetään ennen lisäämistä). Valmisruoat kuumennetaan kauttaaltaan ennen syömistä tai syödään mielellään hyvissä ajoin ennen viimeistä käyttöpäivää.\nKs. myös Kypsät lihavalmisteet, leikkeleet.",
+   peruste:"Listeriariski. Raskaana olevilla listerioosi voi johtaa keskenmenoon tai ennenaikaiseen synnytykseen tai vastasyntyneen infektoitumiseen.\nVanhuksilla sekä henkilöillä, joiden vastustuskyky on heikentynyt perussairauden tai lääkityksen vuoksi, listerioosi voi ilmetä vaikeana yleisinfektiona tai aivokalvontulehduksena.",
+   lahde:"https://www.ruokavirasto.fi/listeria"},
+  {nimi:"Ulkomaiset pakastemarjat", tila:"ehto",
+   ohje:"Kuumennetaan ennen käyttöä 90 asteeseen 5 minuutin ajan tai keitetään 2 minuutin ajan.",
+   peruste:"Norovirus- ja hepatiitti A -virusriski.",
+   lahde:"https://www.ruokavirasto.fi/pakastemarjat"},
+  {nimi:"Kypsentämätön punajuuri", tila:"ehto",
+   ohje:"Kypsennettävä kunnolla. Punajuurta ei käytetä raakana.",
+   peruste:"Ruokamyrkytysvaara.",
+   lahde:"https://www.ruokavirasto.fi/punajuuri"},
+  {nimi:"Idut", tila:"ehto",
+   ohje:"Kuumennetaan kauttaaltaan ennen syömistä tai syödään mielellään hyvissä ajoin ennen viimeistä käyttöpäivää.",
+   peruste:"Listeriariski raskaana olevilla, vanhuksilla ja vastustuskyvyltään heikentyneillä henkilöillä (ks. myös Pakastevihannekset ja kylmässä säilytettävät valmisruoat).",
+   lahde:"https://www.ruokavirasto.fi/idut"},
+  {nimi:"Sienet", tila:"ehto",
+   ohje:"Varmistuttava sienilajista ja sen syöntikelpoisuudesta, käsittely sienilajin mukaan.",
+   peruste:"Eräiden sienten luontaiset myrkyt.",
+   lahde:""},
+  {nimi:"Kahvi ja muut kofeiinipitoiset juomat", tila:"ehto",
+   ohje:"Turvallisen kofeiinin saannin raja kaikista lähteistä päivässä ja kerta-annoksina nautittuna on\n− aikuisille 400 mg/päivä ja 200 mg/kerta-annos\n− raskaana oleville 200 mg/päivä\n− imettäville 200 mg/päivä tai kerta-annos\n− lapsille ja nuorille (1–18 v) alle 3 mg/painokilo\n200 mg kofeiinia saa noin 3 dl (= noin kaksi kahvikupillista) tavallista suodatinkahvia tai yhdestä desilitrasta espressoa. Vastaavan määrän kofeiinia saa noin 8 dl mustaa teetä. Kaakaojuomassa on kofeiinia 3–5 mg/dl.\nKofeiinipitoisia juomia voi käyttää satunnaisesti, mutta käytössä pitää ottaa huomioon vuorokausi- ja kerta-annosrajoitukset ja pienillä lapsilla ja nuorilla painokilokohtaiset rajoitukset.",
+   peruste:"Kofeiini kulkeutuu istukan kautta sikiöön ja rintamaidon kautta lapselle. Tieteellinen näyttö kofeiinin turvallisen saannin rajasta lapsille ja nuorille on vähäinen. Pienten lasten ja nuorten turvallisen saannin raja on johdettu aikuisten rajoista.\nKofeiiniherkille ja raskaana oleville sekä lapsille kofeiini saattaa aiheuttaa jo pieninä annoksina sydämentykytystä ja vapinaa. Kofeiini voi myös aiheuttaa unihäiriöitä, kun sitä nautitaan ennen nukkumaan menoaikaa 1,4 mg/painokilo tai enemmän.",
+   lahde:""},
+  {nimi:"Kolajuomat", tila:"ehto",
+   ohje:"Kofeiinipitoiset kolajuomat soveltuvat vain satunnaiseen käyttöön.\nKun tuotteessa on yli 150 mg/l kofeiinia, on tuotteissa oltava vastaavat varoitusmerkinnät kuin energiajuomissa. Tölkillisessä (3,3 dl) kolajuomaa on kofeiinia yleensä noin 25–60 mg ja pullollisessa (5 dl) noin 35–90 mg.",
+   peruste:"Kofeiini kulkeutuu istukan kautta sikiöön ja rintamaidon kautta lapselle. Tieteellinen näyttö kofeiinin turvallisen saannin rajasta lapsille ja nuorille on vähäinen. Pienten lasten ja nuorten turvallisen saannin raja on johdettu aikuisten rajoista.\nKofeiiniherkille ja raskaana oleville sekä lapsille kofeiini saattaa aiheuttaa jo pieninä annoksina sydämentykytystä ja vapinaa. Kofeiini voi myös aiheuttaa unihäiriöitä, kun sitä nautitaan ennen nukkumaan menoaikaa 1,4 mg/painokilo tai enemmän.",
+   lahde:""},
+  {nimi:"Tuotteet, joihin on lisätty kofeiinia (makeiset, purukumit ja suklaapatukat sekä ravintolisät)", tila:"ehto",
+   ohje:"Kofeiinipitoisten elintarvikkeitten pakkauksissa on oltava varoitusmerkintä: ”Sisältää kofeiinia. Ei suositella lapsille eikä raskaana oleville” sekä merkintä kofeiinipitoisuudesta mg/100 g. Kofeiinin määrä vaihtelee (6–60 mg/annos). Ravintolisissä kofeiinipitoisuus on ilmaistava pakkausmerkinnöissä suositeltavaa päiväannosta kohden. Aikuisilla kofeiinivalmisteiden suurinta kerta-annosta, 200 mg, eikä päiväannosta, 400 mg, tule ylittää. Kofeiinia käytetään myös aromina. Tällöin kofeiini mainitaan tuotteen ainesosaluettelossa aromien kohdalla.",
+   peruste:"",
+   lahde:""},
+  {nimi:"Lakritsi ja salmiakkimakeiset", tila:"ehto",
+   ohje:"Ei suositella",
+   peruste:"Lakritsi- ja salmiakkimakeiset sisältävät glysyrritsiiniä, jonka turvallisesta käyttömäärästä ei ole tietoa. Korkea glysyrritsiinipitoisuus nostaa verenpainetta, lisää turvotusta ja voi aiheuttaa keskenmenovaaran ja on mahdollisesti yhteydessä lapsen kehityshäiriöihin. Pienet annokset (esimerkiksi annos lakritsijäätelöä tai muutama makeinen) eivät ole haitallisia.",
+   lahde:""},
+  {nimi:"Öljykasvien siemenet (esimerkiksi pellavan-, pinjan-, chian-, hampun-, seesamin-, kurpitsan-, unikon ja auringonkukansiemenet)", tila:"ehto",
+   ohje:"Öljysiemeniä sellaisenaan, rouheena tai liotettuna ei käytetä raskauden eikä imetyksen aikana esimerkiksi ummetuksen hoitoon. Pienet määrät öljysiemeniä esimerkiksi leivissä eivät ole haitaksi.",
+   peruste:"Öljykasveilla on luontainen ominaisuus kerätä siemeniinsä maaperän raskasmetalleja, erityisesti nikkeliä ja kadmiumia.",
+   lahde:"https://www.ruokavirasto.fi/pellavansiemenet"},
+  {nimi:"Aprikoosin siemenet (raa'at)", tila:"ehto",
+   ohje:"Enintään 3 kappaletta pienikokoisia siemeniä (yhteensä 0,37 g) päivässä.",
+   peruste:"Sisältää luontaista toksiinia (amygdaliinia). Amygdaliini muuntuu ruoansulatuskanavassa syanidiksi, joka voi aiheuttaa myrkytysvaaran.",
+   lahde:"https://www.ruokavirasto.fi/aprikoosinsimenet"},
+  {nimi:"Inkiväärivalmisteet (inkivääri tiivisteenä tai uutteena), inkivääritee ja inkivääriä sisältävät ravintolisät", tila:"ehto",
+   ohje:"Käyttöä ei suositella.\nInkiväärin mausteenomaisesta käytöstä tuoreena tai kuivattuna mausteena ei ole haittaa.",
+   peruste:"Sisältävät haitallisia aineita, turvallisesta käytöstä ei ole tietoa.",
+   lahde:""},
+  {nimi:"Merilevävalmisteet", tila:"ehto",
+   ohje:"Ei käytetä, jos jodipitoisuus ei ole tiedossa tai tuotteen jodipitoisuus on korkea.",
+   peruste:"Eräissä merilevissä on todettu haitallisen korkeita jodipitoisuuksia. Joissakin merilevissä on todettu myös korkeita raskasmetallipitoisuuksia (arseeni, kadmium ja lyijy). Liiallinen jodin saanti on haitallista kilpirauhasen toiminnalle ja sikiön kasvulle.",
+   lahde:"https://www.ruokavirasto.fi/arseeni"},
+  {nimi:"Parapähkinä", tila:"ehto",
+   ohje:"Korkeintaan 2–3 pähkinää päivässä",
+   peruste:"Parapähkinä sisältää erittäin paljon seleeniä. Sen säännöllinen suositusta suurempi käyttö voi johtaa seleenin liikasaantiin.",
+   lahde:""},
+  {nimi:"Ravintolisät", tila:"ehto",
+   ohje:"Ravintolisien käyttösuositukset ovat kunkin kohderyhmän ravitsemussuosituksissa. Yksilölliseen tarpeeseen käyttöohjeet saa neuvolasta.",
+   peruste:"",
+   lahde:""},
+];
+
+const EXAMPLES = ["Sushi","Kahvi","Brie","Lakritsi","Maksaruuat","Pakastemarjat","Salami","Feta"];
+
+const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+
+const VERDICT = {
+  valta:{cls:"v-valta", icon:"!", label:"Vältä raskausaikana"},
+  ehto: {cls:"v-ehto",  icon:"!", label:"Syö vain ehdoin"},
+  saa:  {cls:"v-saa",   icon:"✓", label:"Ei rajoitusta tiedossa"},
+};
+
+const results = document.getElementById("results");
+const q = document.getElementById("q");
+const clearBtn = document.getElementById("clear");
+
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+function srcLink(url){
+  return `<a class="src" href="${url}" target="_blank" rel="noopener">Ruokavirasto`
+    + `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>`;
+}
+
+function card(it){
+  const v = VERDICT[it.tila];
+  const src = it.lahde ? srcLink(it.lahde) : "";
+  let why = "";
+  if(it.peruste && src) why = `<p class="why"><b>Miksi:</b> ${esc(it.peruste)}\n${src}</p>`;
+  else if(it.peruste)   why = `<p class="why"><b>Miksi:</b> ${esc(it.peruste)}</p>`;
+  else if(src)          why = `<p class="why">${src}</p>`;
+  return `<article class="card ${v.cls}">
+      <div class="top">
+        <span class="badge" aria-hidden="true">${v.icon}</span>
+        <div>
+          <p class="verdict">${v.label}</p>
+          <p class="name">${esc(it.nimi)}</p>
+        </div>
+      </div>
+      <div class="body">
+        <div class="detail">
+          <p class="ohje">${esc(it.ohje)}</p>
+          ${why}
+        </div>
+        <button class="more" type="button" hidden>Näytä lisää</button>
+      </div>
+    </article>`;
+}
+
+function applyClamps(){
+  results.querySelectorAll(".card .detail").forEach(d=>{
+    if(d.scrollHeight > 168){
+      d.classList.add("clamp");
+      const btn = d.nextElementSibling;
+      btn.hidden = false;
+      btn.textContent = "Näytä lisää";
+      btn.onclick = ()=>{
+        const clamped = d.classList.toggle("clamp");
+        btn.textContent = clamped ? "Näytä lisää" : "Näytä vähemmän";
+      };
+    }
+  });
+}
+
+function render(){
+  const term = norm(q.value);
+  clearBtn.style.display = q.value ? "flex" : "none";
+
+  if(!term){
+    results.innerHTML = `<p class="empty">Aloita kirjoittamalla ruoan nimi, tai kokeile esimerkkejä ylhäältä.</p>`;
+    return;
+  }
+  const hits = DATA.filter(d => norm(d.nimi).includes(term));
+
+  if(hits.length === 0){
+    results.innerHTML =
+      `<article class="card v-saa">
+        <div class="top">
+          <span class="badge" aria-hidden="true">✓</span>
+          <div>
+            <p class="verdict">Ei rajoitusta tiedossa</p>
+            <p class="name">”${esc(q.value.trim())}”</p>
+          </div>
+        </div>
+        <div class="body">
+          <p class="ohje">Tälle ei löydy raskausajan rajoitusta Ruokaviraston taulukosta.</p>
+          <p class="why">Tarkista nimen kirjoitusasu, tai kokeile yleisempää sanaa (esim. ”juusto” tai ”kala”). Tämä ei ole lääketieteellinen vahvistus turvallisuudesta.</p>
+        </div>
+      </article>`;
+    return;
+  }
+
+  const head = hits.length > 1 ? `<p class="count">${hits.length} osumaa</p>` : "";
+  results.innerHTML = head + hits.map(card).join("");
+  applyClamps();
+}
+
+const chips = document.getElementById("chips");
+EXAMPLES.forEach(e=>{
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button"; b.textContent = e;
+  b.addEventListener("click", ()=>{ q.value = e; render(); q.focus(); });
+  chips.appendChild(b);
+});
+
+q.addEventListener("input", render);
+clearBtn.addEventListener("click", ()=>{ q.value=""; render(); q.focus(); });
+render();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=> navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+let deferred;
+const installBtn = document.getElementById("install");
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferred = e; installBtn.style.display = "block";
+});
+installBtn.addEventListener("click", async ()=>{
+  if(!deferred) return;
+  deferred.prompt(); await deferred.userChoice; deferred = null;
+  installBtn.style.display = "none";
+});
+const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const standalone = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+if(isiOS && !standalone){ document.getElementById("iosHint").style.display = "block"; }
+</script>
+</body>
+</html>
